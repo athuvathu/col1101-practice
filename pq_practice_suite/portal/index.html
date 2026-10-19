@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IIT Delhi VPL Exam Environment — COL1101</title>
+  
+  <!-- KaTeX Math Rendering -->
+  <link rel="stylesheet" href="vendor/katex.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="vendor/katex.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js'"></script>
+  <script src="vendor/auto-render.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js'"></script>
+
+  <!-- Ace Editor & Marked -->
+  <script src="vendor/ace.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js'"></script>
+  <script src="vendor/mode-python.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js'"></script>
+  <script src="vendor/mode-markdown.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-markdown.js'"></script>
+  <script src="vendor/theme-tomorrow_night.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-tomorrow_night.js'"></script>
+  <script src="vendor/marked.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js'"></script>
+
+  <!-- Bundled Exam Data for 100% Static Hosting -->
+  <script src="questions_data.js"></script>
+
+  <!-- Pyodide: In-Browser WebAssembly Python Runtime -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', Menlo, monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    /* Top Banner / Navbar */
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 13.5px;
+      color: #58a6ff;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .exam-select {
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #30363d; }
+    .btn-run { background: #1f6feb; border-color: #388bfd; color: #fff; }
+    .btn-run:hover { background: #388bfd; }
+    .btn-eval { background: #238636; border-color: #2ea043; color: #fff; }
+    .btn-eval:hover { background: #2ea043; }
+    .btn-reset { background: #21262d; border-color: #484f58; color: #8b949e; font-size: 11px; padding: 4px 8px; }
+    .btn-reset:hover { background: #891a1c; border-color: #da3633; color: #fff; }
+
+    .timer-pill {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 13px;
+      color: #58a6ff;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .timer-pill.paused { color: #d29922; }
+
+    .kbd {
+      background: #21262d;
+      border: 1px solid #30363d;
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #8b949e;
+    }
+
+    .engine-pill {
+      font-size: 11px;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid #30363d;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #0d1117;
+    }
+    .engine-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #d29922;
+    }
+    .engine-dot.ready { background: #3fb950; }
+    .engine-dot.error { background: #f85149; }
+
+    /* Main Workspace Grid */
+    .workspace {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left: Problem Handout */
+    .left-panel {
+      width: 44%;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .panel-header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      height: 38px;
+      flex-shrink: 0;
+    }
+    .question-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .q-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #8b949e;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+    .q-btn.active {
+      background: #0d1117;
+      border-color: #30363d;
+      color: #58a6ff;
+      font-weight: 700;
+    }
+    .problem-content {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: #c9d1d9;
+    }
+    .problem-content h1 { font-size: 16px; color: #f0f6fc; margin: 0 0 12px 0; border-bottom: 1px solid #21262d; padding-bottom: 8px; }
+    .problem-content h2 { font-size: 14px; color: #79c0ff; margin: 16px 0 8px 0; }
+    .problem-content h3 { font-size: 13px; color: #d2a8ff; margin: 14px 0 6px 0; }
+    .problem-content p { margin-bottom: 10px; }
+    .problem-content ul, .problem-content ol { margin: 8px 0 12px 20px; }
+    .problem-content li { margin-bottom: 4px; }
+    .problem-content pre {
+      background: #161b22;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 10px 0 14px 0;
+      border: 1px solid #30363d;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .problem-content code {
+      background: #161b22;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #79c0ff;
+      font-size: 12px;
+    }
+
+    .cli-bar {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .cli-cmd {
+      color: #79c0ff;
+      font-size: 11px;
+      word-break: break-all;
+    }
+    .cli-copy-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10.5px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .cli-copy-btn:hover { background: #30363d; }
+
+    /* Right: Code Editor & VPL Terminal */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0d1117;
+      min-width: 0;
+    }
+    .editor-tabs {
+      display: flex;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 0 8px;
+      height: 38px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .file-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #8b949e;
+      padding: 8px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .file-tab.active {
+      color: #f0f6fc;
+      border-bottom-color: #f78166;
+      font-weight: 600;
+    }
+    .readonly-badge {
+      font-size: 9px;
+      background: #21262d;
+      padding: 1px 4px;
+      border-radius: 2px;
+      color: #8b949e;
+    }
+
+    /* Ace Editor Host */
+    #ace-editor {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Bottom Terminal */
+    .terminal-panel {
+      height: 240px;
+      background: #010409;
+      border-top: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .terminal-header {
+      background: #161b22;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #8b949e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #21262d;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .terminal-output {
+      flex: 1;
+      padding: 10px 14px;
+      color: #58a6ff;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+    .score-banner {
+      display: inline-block;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-left: 8px;
+    }
+    .score-pass { background: #111a13; border: 1px solid #238636; color: #3fb950; }
+    .score-fail { background: #261113; border: 1px solid #da3633; color: #f85149; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>IIT DELHI VPL &bull; COL1101</h1>
+      <select id="exam-select" class="exam-select" onchange="onExamChange()">
+        <option value="exam1">COL1101 Mock Exam 1 (Authentic 1.5-Hr)</option>
+        <option value="exam2">COL1101 Mock Exam 2 (Alternative 1.5-Hr)</option>
+      </select>
+    </div>
+
+    <div class="toolbar-actions">
+      <div class="engine-pill" id="engine-pill" title="Pyodide WebAssembly Python 3.12 Engine">
+        <span class="engine-dot" id="engine-dot"></span>
+        <span id="engine-text">Pyodide: Loading...</span>
+      </div>
+      <div id="timer" class="timer-pill" onclick="toggleTimer()" title="Click or press Space to pause/resume">90:00 [Space]</div>
+      <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Syntax Check <span class="kbd">Ctrl+R</span></button>
+      <button class="btn btn-eval" onclick="onEvaluate()" title="Shortcut: Ctrl+Enter / Cmd+Enter">&#9733; Evaluate (VPL Test) <span class="kbd">Ctrl+Enter</span></button>
+      <button class="btn btn-reset" onclick="onResetCode()" title="Reset current question to initial stub">Reset Code</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Left: Handout -->
+    <div class="left-panel">
+      <div class="panel-header">
+        <div class="question-tabs">
+          <button id="q1-btn" class="q-btn active" onclick="switchQuestion('q1')">Question 1</button>
+          <button id="q2-btn" class="q-btn" onclick="switchQuestion('q2')">Question 2</button>
+        </div>
+        <span id="q-meta" style="color: #3fb950; font-weight: 700;">40 Marks</span>
+      </div>
+      <div id="problem-desc" class="problem-content">Loading problem handout...</div>
+    </div>
+
+    <!-- Right: Code Editor & VPL Terminal -->
+    <div class="right-panel">
+      <div class="editor-tabs">
+        <button id="tab-student" class="file-tab active" onclick="switchFileTab('student')">
+          <span>student_code.py</span>
+        </button>
+        <button id="tab-common" class="file-tab" onclick="switchFileTab('common')">
+          <span>common.py</span>
+          <span class="readonly-badge">READONLY</span>
+        </button>
+        <button id="tab-readme" class="file-tab" onclick="switchFileTab('readme')">
+          <span>README.md</span>
+          <span class="readonly-badge">READONLY</span>
+        </button>
+        <span id="save-status" style="margin-left: auto; font-size: 11px; color: #8b949e; margin-right: 8px;">Saved</span>
+      </div>
+
+      <!-- Ace Editor Host -->
+      <div id="ace-editor"></div>
+
+      <!-- VPL Evaluation Console -->
+      <div class="terminal-panel">
+        <div class="terminal-header">
+          <span>VPL EVALUATION CONSOLE <span id="grade-badge"></span></span>
+          <span id="exec-status">Ready</span>
+        </div>
+        <div id="terminal" class="terminal-output">Press [Evaluate] or Ctrl+Enter to run the test suite on student_code.py.
+Execution traces, test passes/fails, and official Grade :=>> &lt;score&gt; will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentExam = "exam1";
+    let currentQ = "q1";
+    let currentFileTab = "student";
+    let editor = null;
+    let saveTimeout = null;
+
+    // Timer state persisted in localStorage
+    const TIMER_STORAGE_KEY = 'col1101_vpl_timer_v2';
+    let timeLeft = 90 * 60;
+    let timerRunning = false;
+    let timerInterval = null;
+
+    // Pyodide WebAssembly state
+    let pyodideInstance = null;
+    let pyodidePromise = null;
+
+    function getStorageKey(exam, q) {
+      return `col1101_code_${exam}_${q}`;
+    }
+
+    function initTimer() {
+      const saved = localStorage.getItem(TIMER_STORAGE_KEY);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          timeLeft = data.timeLeft;
+          timerRunning = data.timerRunning;
+          if (timerRunning && data.lastTimestamp) {
+            const delta = Math.floor((Date.now() - data.lastTimestamp) / 1000);
+            timeLeft = Math.max(0, timeLeft - delta);
+          }
+        } catch (e) {
+          timeLeft = 90 * 60;
+        }
+      }
+      updateTimerDisplay();
+      if (timerRunning) {
+        startTimerInterval();
+      }
+    }
+
+    function saveTimerState() {
+      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({
+        timeLeft: timeLeft,
+        timerRunning: timerRunning,
+        lastTimestamp: Date.now()
+      }));
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      const el = document.getElementById('timer');
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      if (timerRunning) {
+        el.textContent = `${timeStr} [Space]`;
+        el.classList.remove('paused');
+      } else {
+        el.textContent = `${timeStr} (Paused)`;
+        el.classList.add('paused');
+      }
+    }
+
+    function startTimerInterval() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+          saveTimerState();
+        } else {
+          clearInterval(timerInterval);
+          timerRunning = false;
+          saveTimerState();
+          alert("Time is up! 90 minutes have elapsed.");
+        }
+      }, 1000);
+    }
+
+    function toggleTimer() {
+      timerRunning = !timerRunning;
+      if (timerRunning) {
+        startTimerInterval();
+      } else {
+        if (timerInterval) clearInterval(timerInterval);
+      }
+      updateTimerDisplay();
+      saveTimerState();
+    }
+
+    // Pyodide Initialization
+    async function initPyodide() {
+      if (pyodideInstance) return pyodideInstance;
+      if (!pyodidePromise) {
+        const dot = document.getElementById('engine-dot');
+        const text = document.getElementById('engine-text');
+        pyodidePromise = (async () => {
+          try {
+            if (typeof loadPyodide === 'undefined') {
+              throw new Error('Pyodide script failed to load from CDN.');
+            }
+            const py = await loadPyodide({
+              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+            });
+            pyodideInstance = py;
+            dot.className = "engine-dot ready";
+            text.textContent = "Pyodide: Ready";
+            return py;
+          } catch (e) {
+            dot.className = "engine-dot error";
+            text.textContent = "Pyodide: Offline / Failed";
+            console.error("Pyodide error:", e);
+            throw e;
+          }
+        })();
+      }
+      return pyodidePromise;
+    }
+
+    function initAce() {
+      editor = ace.edit("ace-editor");
+      editor.setTheme("ace/theme/tomorrow_night");
+      editor.session.setMode("ace/mode/python");
+
+      // Bracket auto-pairing and typing ergonomics
+      editor.setBehavioursEnabled(true);
+      editor.setWrapBehavioursEnabled(true);
+
+      editor.setOptions({
+        fontSize: "13px",
+        fontFamily: "'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', Menlo, monospace",
+        tabSize: 4,
+        useSoftTabs: true,
+        showPrintMargin: false,
+        highlightActiveLine: true,
+        highlightSelectedWord: true,
+        autoScrollEditorIntoView: true,
+        enableBasicAutocompletion: false,
+        enableLiveAutocompletion: false,
+        enableSnippets: false
+      });
+
+      // Keyboard shortcuts
+      editor.commands.addCommand({
+        name: 'saveCode',
+        bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+        exec: function() { saveCode(); }
+      });
+
+      editor.commands.addCommand({
+        name: 'evaluateCode',
+        bindKey: {win: 'Ctrl-Enter', mac: 'Command-Enter'},
+        exec: function() { onEvaluate(); }
+      });
+
+      editor.commands.addCommand({
+        name: 'runCode',
+        bindKey: {win: 'Ctrl-R', mac: 'Command-R'},
+        exec: function() { onRun(); }
+      });
+
+      editor.session.on('change', function() {
+        if (currentFileTab === 'student') {
+          document.getElementById('save-status').textContent = 'Editing...';
+          clearTimeout(saveTimeout);
+          saveTimeout = setTimeout(saveCode, 400);
+        }
+      });
+    }
+
+    function renderDescription(markdown, cliCmd) {
+      if (!markdown) {
+        document.getElementById('problem-desc').innerHTML = '';
+        return;
+      }
+
+      const mathBlocks = [];
+      const mathInlines = [];
+
+      // 1. Extract Display Math: $$...$$
+      let cleaned = markdown.replace(/\$\$([\s\S]+?)\$\$/g, (match, math) => {
+        const id = mathBlocks.length;
+        if (window.katex) {
+          try {
+            mathBlocks.push(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }));
+          } catch (e) {
+            mathBlocks.push(match);
+          }
+        } else {
+          mathBlocks.push(match);
+        }
+        return `%%%MATHBLOCK_${id}%%%`;
+      });
+
+      // 2. Extract Inline Math: $...$
+      cleaned = cleaned.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
+        const id = mathInlines.length;
+        if (window.katex) {
+          try {
+            mathInlines.push(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+          } catch (e) {
+            mathInlines.push(match);
+          }
+        } else {
+          mathInlines.push(match);
+        }
+        return `%%%MATHINLINE_${id}%%%`;
+      });
+
+      // 3. Parse Markdown
+      let html = window.marked ? marked.parse(cleaned) : cleaned;
+
+      // 4. Restore rendered Math
+      html = html.replace(/%%%MATHBLOCK_(\d+)%%%/g, (match, id) => mathBlocks[parseInt(id)] || match);
+      html = html.replace(/%%%MATHINLINE_(\d+)%%%/g, (match, id) => mathInlines[parseInt(id)] || match);
+
+      // Add CLI Command bar at the top of handout
+      const cliBar = `
+        <div class="cli-bar">
+          <span class="cli-cmd">Terminal CLI: <code>${cliCmd || ''}</code></span>
+          <button class="cli-copy-btn" onclick="copyCli('${cliCmd || ''}')">Copy CLI</button>
+        </div>
+      `;
+
+      const descEl = document.getElementById('problem-desc');
+      descEl.innerHTML = cliBar + html;
+
+      // Auto-render fallback
+      if (window.renderMathInElement) {
+        try {
+          renderMathInElement(descEl, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ],
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+          });
+        } catch (e) {}
+      }
+    }
+
+    function getProblemData() {
+      if (!window.EXAM_DATA || !window.EXAM_DATA[currentExam]) return null;
+      return window.EXAM_DATA[currentExam][currentQ];
+    }
+
+    function loadProblem() {
+      const qData = getProblemData();
+      if (!qData) return;
+
+      document.getElementById('q-meta').textContent = `${qData.marks} Marks (${qData.target_time})`;
+      renderDescription(qData.description, qData.cli_cmd);
+      renderEditorContent();
+    }
+
+    function renderEditorContent() {
+      const qData = getProblemData();
+      if (!qData || !editor) return;
+
+      if (currentFileTab === 'student') {
+        const savedCode = localStorage.getItem(getStorageKey(currentExam, currentQ));
+        const codeToDisplay = savedCode !== null ? savedCode : qData.student_code;
+        editor.setValue(codeToDisplay, -1);
+        editor.setReadOnly(false);
+        editor.session.setMode("ace/mode/python");
+        document.getElementById('save-status').textContent = savedCode !== null ? 'Loaded from storage' : 'Default stub';
+      } else if (currentFileTab === 'common') {
+        editor.setValue(qData.common_code || "", -1);
+        editor.setReadOnly(true);
+        editor.session.setMode("ace/mode/python");
+      } else if (currentFileTab === 'readme') {
+        editor.setValue(qData.description || "", -1);
+        editor.setReadOnly(true);
+        editor.session.setMode("ace/mode/markdown");
+      }
+    }
+
+    function saveCode() {
+      if (currentFileTab !== 'student' || !editor) return;
+      document.getElementById('save-status').textContent = 'Saving...';
+      const code = editor.getValue();
+      localStorage.setItem(getStorageKey(currentExam, currentQ), code);
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      document.getElementById('save-status').textContent = `Saved (${timeStr})`;
+    }
+
+    function onResetCode() {
+      const qData = getProblemData();
+      if (!qData) return;
+      if (confirm(`Reset ${currentExam.toUpperCase()} ${currentQ.toUpperCase()} back to original template stub?`)) {
+        localStorage.removeItem(getStorageKey(currentExam, currentQ));
+        if (currentFileTab === 'student') {
+          editor.setValue(qData.student_code, -1);
+        }
+        document.getElementById('save-status').textContent = 'Reset to template';
+      }
+    }
+
+    function copyCli(cmd) {
+      if (!cmd) return;
+      navigator.clipboard.writeText(cmd);
+      alert('Copied to clipboard:\n' + cmd);
+    }
+
+    async function onRun() {
+      document.getElementById('exec-status').textContent = 'Checking syntax...';
+      const terminal = document.getElementById('terminal');
+      terminal.textContent = 'Executing Python syntax check in browser WASM engine...\n';
+
+      try {
+        const py = await initPyodide();
+        const code = editor.getValue();
+        py.globals.set("__user_code__", code);
+
+        const checkScript = `
+import sys, io
+_out = io.StringIO()
+_orig_out = sys.stdout
+_orig_err = sys.stderr
+sys.stdout = _out
+sys.stderr = _out
+_exit_code = 0
+
+try:
+    compile(__user_code__, "student_code.py", "exec")
+    print("Syntax & Structure Check: PASSED")
+    print("Python 3 compilation succeeded with no syntax errors.")
+except SyntaxError as e:
+    _exit_code = 1
+    print(f"SYNTAX ERROR on line {e.lineno}:")
+    print(f"  {e.text.strip() if e.text else ''}")
+    offset = e.offset or 1
+    print(f"  {' ' * max(0, offset - 1)}^")
+    print(f"{type(e).__name__}: {e.msg}")
+except Exception as e:
+    _exit_code = 1
+    print(f"COMPILATION ERROR: {e}")
+finally:
+    sys.stdout = _orig_out
+    sys.stderr = _orig_err
+    _res = _out.getvalue()
+`;
+        await py.runPythonAsync(checkScript);
+        const output = py.globals.get('_res');
+        const exitCode = py.globals.get('_exit_code');
+
+        terminal.textContent = output;
+        document.getElementById('exec-status').textContent = exitCode === 0 ? 'Syntax OK' : 'Syntax Error';
+      } catch (err) {
+        terminal.textContent = `Error launching Python WASM engine:\n${err.message}`;
+        document.getElementById('exec-status').textContent = 'Engine Error';
+      }
+    }
+
+    async function onEvaluate() {
+      document.getElementById('exec-status').textContent = 'Evaluating tests...';
+      const terminal = document.getElementById('terminal');
+      terminal.textContent = 'Mounting virtual MEMFS and running authentic VPL test suite...\n';
+
+      const gradeBadge = document.getElementById('grade-badge');
+      gradeBadge.className = '';
+      gradeBadge.textContent = '';
+
+      try {
+        const py = await initPyodide();
+        const qData = getProblemData();
+        const studentCode = currentFileTab === 'student' ? editor.getValue() : (localStorage.getItem(getStorageKey(currentExam, currentQ)) || qData.student_code);
+
+        // Mount files into Pyodide virtual MEMFS
+        py.FS.writeFile("common.py", qData.common_code);
+        py.FS.writeFile("student_code.py", studentCode);
+        py.FS.writeFile("test_suite.py", qData.test_suite);
+
+        const runScript = `
+import sys, io
+_out = io.StringIO()
+_orig_out = sys.stdout
+_orig_err = sys.stderr
+sys.stdout = _out
+sys.stderr = _out
+_exit_code = 0
+
+try:
+    for m in list(sys.modules.keys()):
+        if m in ("student_code", "common", "solution", "test_suite"):
+            del sys.modules[m]
+
+    import test_suite
+    score = test_suite.evaluate("student_code")
+except Exception as e:
+    _exit_code = 1
+    import traceback
+    traceback.print_exc()
+finally:
+    sys.stdout = _orig_out
+    sys.stderr = _orig_err
+    _res = _out.getvalue()
+`;
+        await py.runPythonAsync(runScript);
+        const output = py.globals.get('_res');
+        const exitCode = py.globals.get('_exit_code');
+
+        terminal.textContent = output;
+
+        // Parse Grade :=>> <num>
+        const gradeMatch = output.match(/Grade :=>> (\\d+)/);
+        if (gradeMatch) {
+          const score = parseInt(gradeMatch[1]);
+          const total = qData.marks;
+          gradeBadge.textContent = `Score: ${score}/${total} (${Math.round(score/total*100)}%)`;
+          gradeBadge.className = `score-banner ${score === total ? 'score-pass' : 'score-fail'}`;
+        }
+
+        document.getElementById('exec-status').textContent = exitCode === 0 ? 'Evaluation Complete' : 'Tests Failed';
+      } catch (err) {
+        terminal.textContent = `Error executing test suite in Pyodide:\n${err.message}`;
+        document.getElementById('exec-status').textContent = 'Execution Error';
+      }
+    }
+
+    function switchQuestion(q) {
+      currentQ = q;
+      document.getElementById('q1-btn').classList.toggle('active', q === 'q1');
+      document.getElementById('q2-btn').classList.toggle('active', q === 'q2');
+      loadProblem();
+    }
+
+    function onExamChange() {
+      currentExam = document.getElementById('exam-select').value;
+      loadProblem();
+    }
+
+    function switchFileTab(tab) {
+      currentFileTab = tab;
+      document.getElementById('tab-student').classList.toggle('active', tab === 'student');
+      document.getElementById('tab-common').classList.toggle('active', tab === 'common');
+      document.getElementById('tab-readme').classList.toggle('active', tab === 'readme');
+      renderEditorContent();
+    }
+
+    // Space / P keyboard shortcut to pause/resume timer (when outside editor)
+    window.addEventListener('keydown', (e) => {
+      if ((e.code === 'Space' || e.key === 'p' || e.key === 'P') && editor && !editor.isFocused()) {
+        e.preventDefault();
+        toggleTimer();
+      }
+    });
+
+    window.onload = () => {
+      initTimer();
+      initAce();
+      loadProblem();
+      initPyodide(); // Preload WASM runtime in background
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COL1101 Quiz 2: Interactive Study & Simulation Portal</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --purple: #bc8cff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 60px; }
+
+    header {
+      background: linear-gradient(135deg, #1f242c 0%, #161b22 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    header h1 { color: var(--text-bright); font-size: 1.8rem; margin-bottom: 8px; }
+    header p { color: var(--accent); font-size: 0.95rem; }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: var(--text);
+      padding: 14px 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    nav button:hover { color: var(--text-bright); background: rgba(255,255,255,0.03); }
+    nav button.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(88, 166, 255, 0.08); }
+
+    .container { max-width: 1050px; margin: 25px auto; padding: 0 20px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .card h2 { color: var(--text-bright); font-size: 1.3rem; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .card h3 { color: var(--purple); font-size: 1.1rem; margin: 16px 0 8px 0; }
+
+    /* Interactive Tree Visualizer */
+    #tree-svg {
+      width: 100%;
+      height: 320px;
+      background: #090d13;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+    .node-circle { fill: #1f6feb; stroke: #58a6ff; stroke-width: 2px; transition: all 0.3s; cursor: pointer; }
+    .node-circle:hover { fill: var(--yellow); stroke: #e3b341; }
+    .node-text { fill: #ffffff; font-size: 13px; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .node-idx { fill: #8b949e; font-size: 10px; text-anchor: middle; pointer-events: none; }
+    .tree-edge { stroke: #30363d; stroke-width: 2px; }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    button.btn {
+      background: #238636;
+      color: white;
+      border: 1px solid rgba(240,246,252,0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button.btn:hover { background: #2ea043; }
+    button.btn-secondary { background: #21262d; border-color: var(--border); color: var(--text); }
+    button.btn-secondary:hover { background: #30363d; color: var(--text-bright); }
+    button.btn-danger { background: #da3633; }
+    button.btn-danger:hover { background: #b62324; }
+
+    .array-view {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 15px 0;
+      padding: 12px;
+      background: #090d13;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .array-cell {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 12px;
+      text-align: center;
+      min-width: 52px;
+    }
+    .array-cell .idx { font-size: 0.75rem; color: #8b949e; }
+    .array-cell .val { font-size: 1rem; font-weight: bold; color: var(--accent); }
+
+    /* Timeline Stepper */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .timeline-step {
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      background: #090d13;
+      border-left: 4px solid var(--border);
+      border-radius: 0 6px 6px 0;
+      transition: border-color 0.2s;
+    }
+    .timeline-step.active { border-left-color: var(--accent); background: rgba(88, 166, 255, 0.05); }
+    .step-time { font-weight: bold; color: var(--yellow); min-width: 40px; }
+    .step-desc { flex: 1; }
+
+    /* Quiz Box */
+    .quiz-question {
+      background: #090d13;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .quiz-question h4 { color: var(--text-bright); margin-bottom: 12px; font-size: 1.05rem; }
+    .quiz-opt {
+      display: block;
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 4px;
+      background: #161b22;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quiz-opt:hover { background: #21262d; border-color: #8b949e; }
+    .quiz-opt input { margin-right: 10px; }
+    .quiz-feedback { margin-top: 12px; padding: 12px; border-radius: 6px; display: none; font-size: 0.95rem; }
+    .quiz-feedback.correct { background: rgba(63, 185, 80, 0.15); border: 1px solid var(--green); color: #7ee787; }
+    .quiz-feedback.incorrect { background: rgba(248, 81, 73, 0.15); border: 1px solid var(--red); color: #ff7b72; }
+
+    code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 0.88rem; color: #ff7b72; }
+    pre { background: #090d13; border: 1px solid var(--border); padding: 14px; border-radius: 6px; overflow-x: auto; margin: 12px 0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>COL1101 Quiz 2: Master Interactive Study Portal</h1>
+  <p>Authentic IIT Delhi Curriculum Simulator &bull; Binary Heaps &bull; Closures &bull; Concurrency &bull; Invariants</p>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('tab-heap')">1. Binary Heap Simulator</button>
+  <button onclick="switchTab('tab-closures')">2. Closures & Scoping</button>
+  <button onclick="switchTab('tab-concurrency')">3. Concurrency & Deadlocks</button>
+  <button onclick="switchTab('tab-quiz')">4. 20-Pt Mock Exam</button>
+</nav>
+
+<div class="container">
+
+  <!-- ==================== TAB 1: HEAP SIMULATOR ==================== -->
+  <div id="tab-heap" class="tab-content active">
+    <div class="card">
+      <h2>Binary Min-Heap Visualizer & Sift-Down Engine</h2>
+      <p>A binary min-heap is an <strong>Almost Complete Binary Tree (ACBT)</strong> satisfying $A[\lfloor (i-1)/2 \rfloor] \le A[i]$. Use this sandbox to visualize tree nodes and 0-indexed array mapping.</p>
+      
+      <svg id="tree-svg" viewBox="0 0 800 320"></svg>
+      
+      <div class="array-view" id="array-container"></div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="triggerFastBuild()">Run Fast Build-Heap</button>
+        <button class="btn btn-secondary" onclick="triggerExtractMin()">Extract Min</button>
+        <button class="btn btn-secondary" onclick="triggerInsert()">Insert Random</button>
+        <button class="btn btn-secondary" onclick="resetHeap()">Reset to Default</button>
+      </div>
+      <div id="heap-log" style="margin-top: 15px; font-family: monospace; color: var(--yellow); font-size: 0.9rem;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Key Theoretical Guarantees (Lectures 19–21)</h2>
+      <h3>1. Ancestor Rank Theorem</h3>
+      <p>Every node at depth $d$ has strictly $d$ ancestors on its path to the root. In a min-heap with distinct elements, all $d$ ancestors are strictly smaller than itself:</p>
+      <p style="margin: 8px 0;">$$\text{rank}(v) \ge \text{depth}(v) + 1$$</p>
+      <p>&bull; <strong>1st smallest (minimum):</strong> Exclusively at depth 0 (index 0).<br>
+         &bull; <strong>2nd smallest:</strong> Exclusively at depth 1 (indices 1, 2).<br>
+         &bull; <strong>3rd smallest:</strong> Depths 1 or 2 (indices 1 to 6). Never depth &ge; 3!<br>
+         &bull; <strong>4th smallest:</strong> Depths 1, 2, or 3 (indices 1 to 14). Never depth &ge; 4!</p>
+      
+      <h3>2. Why Fast Build Heap is $\Theta(n)$ Linear</h3>
+      <p>Bottom-up sift-down does work proportional to <strong>height</strong> (distance to leaf). The $\approx n/2$ leaves do 0 work! Summing work across heights yields:</p>
+      <pre>T(n) &le; n * &sum;_{h=1}^&infin; (h / 2^h) = n * 2 = &Theta;(n)</pre>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 2: CLOSURES & SCOPING ==================== -->
+  <div id="tab-closures" class="tab-content">
+    <div class="card">
+      <h2>Python Closures: Eager Default Binding vs Late Binding</h2>
+      <p>This interactive stepper illustrates why list comprehensions and loops with lambdas create subtle scoping traps.</p>
+      
+      <pre><code># The Two Functions in make_pipeline(base=2):
+# 1. Eager: ops.append(lambda x, s=step: x + s * 2)
+# 2. Late:  late_ops.append(lambda x: x + step * 2)</code></pre>
+
+      <div class="btn-row">
+        <button class="btn" onclick="stepClosure(1)">Step 1: step = 1</button>
+        <button class="btn" onclick="stepClosure(2)">Step 2: step = 2</button>
+        <button class="btn" onclick="stepClosure(3)">Step 3: step = 3 (Loop Ends)</button>
+        <button class="btn btn-secondary" onclick="stepClosure(4)">Step 4: Execute pipe(10)</button>
+      </div>
+
+      <div id="closure-trace-box" style="margin-top: 15px; padding: 15px; background: #090d13; border: 1px solid var(--border); border-radius: 6px;">
+        <h4 style="color: var(--accent);">State at Initial:</h4>
+        <p>Click "Step 1" to trace loop execution step-by-step.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 3: CONCURRENCY & DEADLOCKS ==================== -->
+  <div id="tab-concurrency" class="tab-content">
+    <div class="card">
+      <h2>Interactive Interleaving Simulator: The Lost Update</h2>
+      <p>Simulate how a context switch between a <strong>READ</strong> and a <strong>WRITE</strong> causes an account deposit to disappear.</p>
+      
+      <div class="timeline" id="concurrency-timeline">
+        <div class="timeline-step" id="step-0"><div class="step-time">t0</div><div class="step-desc">Initial Account Balance = $100.</div></div>
+        <div class="timeline-step" id="step-1"><div class="step-time">t1</div><div class="step-desc">Thread 1 (deposit $10) reads <code>t1 = balance = 100</code>.</div></div>
+        <div class="timeline-step" id="step-2"><div class="step-time">t2</div><div class="step-desc"><strong>[CONTEXT SWITCH]</strong> Thread 1 preempted. Thread 2 (deposit $20) runs.</div></div>
+        <div class="timeline-step" id="step-3"><div class="step-time">t3</div><div class="step-desc">Thread 2 reads <code>t2 = balance = 100</code> and writes <code>balance = 100 + 20 = 120</code>.</div></div>
+        <div class="timeline-step" id="step-4"><div class="step-time">t4</div><div class="step-desc"><strong>[CONTEXT SWITCH]</strong> Thread 1 resumes with stale <code>t1 = 100</code>!</div></div>
+        <div class="timeline-step" id="step-5"><div class="step-time">t5</div><div class="step-desc">Thread 1 writes <code>balance = 100 + 10 = 110</code>. <strong>T2's deposit is erased! Final = $110 (expected $130).</strong></div></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="animateTimeline()">Play Step-by-Step Interleaving</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Deadlock: Reverse Lock Acquisition Trace</h2>
+      <pre><code># Thread 1:                     # Thread 2:
+with lock1:                     with lock2:
+    with lock2:                     with lock1:
+        transfer()                      transfer()</code></pre>
+      <p style="margin-top: 10px;">&bull; <strong>At $t_0$:</strong> Thread 1 acquires <code>lock1</code>.<br>
+      &bull; <strong>At $t_1$:</strong> Thread 2 acquires <code>lock2</code>.<br>
+      &bull; <strong>At $t_2$:</strong> Thread 1 requests <code>lock2</code> &rarr; <strong>BLOCKS</strong> (held by Thread 2).<br>
+      &bull; <strong>At $t_3$:</strong> Thread 2 requests <code>lock1</code> &rarr; <strong>BLOCKS</strong> (held by Thread 1).<br>
+      &bull; <strong>Outcome:</strong> Circular wait! Both threads sleep forever.</p>
+      
+      <h3 style="color: var(--green); margin-top: 15px;">The Fix: Global Lock Ordering (Havender's Rule)</h3>
+      <p>Force all threads to acquire locks in strictly increasing order based on a global ID:</p>
+      <pre><code>first, second = (lock1, lock2) if id(lock1) < id(lock2) else (lock2, lock1)
+with first:
+    with second:
+        transfer()</code></pre>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 4: MOCK EXAM ==================== -->
+  <div id="tab-quiz" class="tab-content">
+    <div class="card">
+      <h2>Authentic 20-Point Quiz 2 Mock Exam</h2>
+      <p>Answer all questions below. Patterned on the IIT Delhi Quiz 1 format.</p>
+
+      <form id="quiz-form" onsubmit="event.preventDefault(); gradeExam();">
+        
+        <!-- Q1 -->
+        <div class="quiz-question">
+          <h4>Q1 (2 pts): Can a binary min-heap H1 and a binary max-heap H2 on {1, 2, 3, 4, 5, 6, 7} satisfy H1[1] == H2[1]?</h4>
+          <label class="quiz-opt"><input type="radio" name="q1" value="0"> No, min-heaps and max-heaps cannot share internal node values.</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="1"> Yes, any value in {3, 4, 5} can reside at index 1 (e.g. H1[1] = H2[1] = 4).</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="2"> Yes, but only value 1 can reside at index 1.</label>
+          <div class="quiz-feedback" id="fb-q1"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question">
+          <h4>Q2 (2 pts): Can H1[0] == H2[2] for min-heap H1 and max-heap H2 on {1, 2, 3, 4, 5, 6, 7}?</h4>
+          <label class="quiz-opt"><input type="radio" name="q2" value="0"> Yes, by swapping leaves.</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="1"> No, because H1[0] = 1, while in H2, node 2 is an internal node with children 5 and 6, forcing H2[2] &gt; H2[5] &ge; 1.</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="2"> Yes, because root of min-heap can be any leaf in max-heap.</label>
+          <div class="quiz-feedback" id="fb-q2"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question">
+          <h4>Q3 (2 pts): In a binary min-heap of size n = 30 with distinct keys, where can the 4th smallest element reside?</h4>
+          <label class="quiz-opt"><input type="radio" name="q3" value="0"> Depths 1 and 2 only (indices 1 to 6).</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="1"> Depths 1, 2, and 3 (array index range [1, 14]).</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="2"> Any leaf node (indices 15 to 29).</label>
+          <div class="quiz-feedback" id="fb-q3"></div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="quiz-question">
+          <h4>Q4 (3 pts): Consider eager pipeline ops (lambda x, s=step: x + s*2) vs late_ops (lambda x: x + step*2) for step in [1, 2, 3]. What are print(pipe_a(10)) and print(pipe_b(10))?</h4>
+          <label class="quiz-opt"><input type="radio" name="q4" value="0"> pipe_a = 22, pipe_b = 22</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="1"> pipe_a = 22, pipe_b = 28</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="2"> pipe_a = 16, pipe_b = 19</label>
+          <div class="quiz-feedback" id="fb-q4"></div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="quiz-question">
+          <h4>Q5 (3 pts): In Fast Build Heap, why does the inductive step P(i) &implies; P(i-1) hold?</h4>
+          <label class="quiz-opt"><input type="radio" name="q5" value="0"> Because child indices satisfy 2i+1 &gt; i and 2i+2 &gt; i (for i &ge; 0), guaranteeing child subtrees are already valid heaps by P(i), satisfying heap_down's precondition.</label>
+          <label class="quiz-opt"><input type="radio" name="q5" value="1"> Because all leaf nodes are sorted.</label>
+          <label class="quiz-opt"><input type="radio" name="q5" value="2"> Because heap_down executes in O(1) time.</label>
+          <div class="quiz-feedback" id="fb-q5"></div>
+        </div>
+
+        <!-- Q6 -->
+        <div class="quiz-question">
+          <h4>Q6 (8 pts - Synthesis): Why does bottom-up Fast Build Heap run in &Theta;(n) time while top-down repeated insert runs in &Theta;(n log n)?</h4>
+          <label class="quiz-opt"><input type="radio" name="q6" value="0"> Python's list has O(1) append operations.</label>
+          <label class="quiz-opt"><input type="radio" name="q6" value="1"> Bottom-up does work proportional to height where &approx; n/2 leaves do 0 work; the AGP sum &sum; (h / 2^h) converges to 2, yielding T(n) &le; 2n = &Theta;(n).</label>
+          <label class="quiz-opt"><input type="radio" name="q6" value="2"> Because memory cache lines prevent context switches.</label>
+          <div class="quiz-feedback" id="fb-q6"></div>
+        </div>
+
+        <button type="submit" class="btn">Submit Exam for Grading</button>
+        <div id="exam-score-banner" style="margin-top: 20px; font-size: 1.2rem; font-weight: bold; color: var(--green);"></div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Heap Visualizer Logic
+  let heapArr = [10, 40, 20, 15, 12, 25, 30];
+
+  const nodeCoords = [
+    {x: 400, y: 40},
+    {x: 220, y: 110}, {x: 580, y: 110},
+    {x: 130, y: 190}, {x: 310, y: 190}, {x: 490, y: 190}, {x: 670, y: 190}
+  ];
+
+  function renderHeap() {
+    const svg = document.getElementById('tree-svg');
+    const arrayBox = document.getElementById('array-container');
+    svg.innerHTML = '';
+    arrayBox.innerHTML = '';
+
+    // Render Edges
+    for (let i = 0; i < heapArr.length; i++) {
+      const left = 2 * i + 1;
+      const right = 2 * i + 2;
+      if (left < heapArr.length && left < nodeCoords.length) {
+        svg.innerHTML += `<line class="tree-edge" x1="${nodeCoords[i].x}" y1="${nodeCoords[i].y}" x2="${nodeCoords[left].x}" y2="${nodeCoords[left].y}"/>`;
+      }
+      if (right < heapArr.length && right < nodeCoords.length) {
+        svg.innerHTML += `<line class="tree-edge" x1="${nodeCoords[i].x}" y1="${nodeCoords[i].y}" x2="${nodeCoords[right].x}" y2="${nodeCoords[right].y}"/>`;
+      }
+    }
+
+    // Render Nodes
+    for (let i = 0; i < heapArr.length && i < nodeCoords.length; i++) {
+      svg.innerHTML += `
+        <circle class="node-circle" cx="${nodeCoords[i].x}" cy="${nodeCoords[i].y}" r="22" onclick="showNodeInfo(${i})"/>
+        <text class="node-text" x="${nodeCoords[i].x}" y="${nodeCoords[i].y}">${heapArr[i]}</text>
+        <text class="node-idx" x="${nodeCoords[i].x}" y="${nodeCoords[i].y + 32}">idx ${i}</text>
+      `;
+
+      arrayBox.innerHTML += `
+        <div class="array-cell">
+          <div class="idx">A[${i}]</div>
+          <div class="val">${heapArr[i]}</div>
+        </div>
+      `;
+    }
+  }
+
+  function showNodeInfo(idx) {
+    const val = heapArr[idx];
+    const parent = idx > 0 ? Math.floor((idx - 1) / 2) : 'None (Root)';
+    const left = 2 * idx + 1 < heapArr.length ? heapArr[2 * idx + 1] : 'None';
+    const right = 2 * idx + 2 < heapArr.length ? heapArr[2 * idx + 2] : 'None';
+    document.getElementById('heap-log').innerText = `Node A[${idx}] = ${val} | Parent: ${parent} | Left Child: ${left} | Right Child: ${right}`;
+  }
+
+  function triggerFastBuild() {
+    // Sift down bottom up
+    for (let i = Math.floor(heapArr.length / 2) - 1; i >= 0; i--) {
+      siftDown(i);
+    }
+    document.getElementById('heap-log').innerText = 'Fast Build Heap executed! Array satisfies min-heap property.';
+    renderHeap();
+  }
+
+  function siftDown(i) {
+    while (2 * i + 1 < heapArr.length) {
+      let l = 2 * i + 1, r = 2 * i + 2, smallest = l;
+      if (r < heapArr.length && heapArr[r] < heapArr[l]) smallest = r;
+      if (heapArr[i] <= heapArr[smallest]) break;
+      let temp = heapArr[i];
+      heapArr[i] = heapArr[smallest];
+      heapArr[smallest] = temp;
+      i = smallest;
+    }
+  }
+
+  function triggerExtractMin() {
+    if (heapArr.length <= 1) return;
+    const min = heapArr[0];
+    heapArr[0] = heapArr.pop();
+    siftDown(0);
+    document.getElementById('heap-log').innerText = `Extracted min ${min}. Moved end to root and sifted down.`;
+    renderHeap();
+  }
+
+  function triggerInsert() {
+    const val = Math.floor(Math.random() * 90) + 10;
+    heapArr.push(val);
+    let i = heapArr.length - 1;
+    while (i > 0) {
+      let p = Math.floor((i - 1) / 2);
+      if (heapArr[p] <= heapArr[i]) break;
+      let temp = heapArr[p];
+      heapArr[p] = heapArr[i];
+      heapArr[i] = temp;
+      i = p;
+    }
+    document.getElementById('heap-log').innerText = `Inserted ${val} and sifted up.`;
+    renderHeap();
+  }
+
+  function resetHeap() {
+    heapArr = [10, 40, 20, 15, 12, 25, 30];
+    document.getElementById('heap-log').innerText = 'Reset to default unsorted/partial heap.';
+    renderHeap();
+  }
+
+  // Closures Stepper
+  function stepClosure(step) {
+    const box = document.getElementById('closure-trace-box');
+    if (step === 1) {
+      box.innerHTML = `
+        <h4 style="color: var(--yellow);">Iteration 1: step = 1</h4>
+        <p>&bull; <code>ops[0]</code> created with default arg <code>s=1</code> stored in <code>__defaults__ = (1,)</code>.</p>
+        <p>&bull; <code>late_ops[0]</code> captures Cell Object pointer to <code>step</code>. Cell value currently = 1.</p>
+      `;
+    } else if (step === 2) {
+      box.innerHTML = `
+        <h4 style="color: var(--yellow);">Iteration 2: step = 2</h4>
+        <p>&bull; <code>ops[1]</code> created with default arg <code>s=2</code> stored in <code>__defaults__ = (2,)</code>.</p>
+        <p>&bull; <code>late_ops[1]</code> captures the SAME Cell Object pointer. Cell value now updated to 2!</p>
+      `;
+    } else if (step === 3) {
+      box.innerHTML = `
+        <h4 style="color: var(--yellow);">Iteration 3: step = 3 (Loop Terminates)</h4>
+        <p>&bull; <code>ops[2]</code> created with default arg <code>s=3</code> stored in <code>__defaults__ = (3,)</code>.</p>
+        <p>&bull; Loop finishes! The shared Cell Object for <code>step</code> permanently holds <strong>3</strong>.</p>
+      `;
+    } else if (step === 4) {
+      box.innerHTML = `
+        <h4 style="color: var(--green);">Call Execution: pipe(10)</h4>
+        <p>&bull; <code>pipe_a(10)</code> (Eager): 10 + (1*2) = 12 &rarr; 12 + (2*2) = 16 &rarr; 16 + (3*2) = <strong>22</strong>.</p>
+        <p>&bull; <code>pipe_b(10)</code> (Late): All three lambdas dereference the cell and see <code>step = 3</code>!<br>
+           10 + (3*2) = 16 &rarr; 16 + (3*2) = 22 &rarr; 22 + (3*2) = <strong>28</strong>.</p>
+      `;
+    }
+  }
+
+  // Concurrency Animation
+  function animateTimeline() {
+    for (let i = 0; i <= 5; i++) {
+      setTimeout(() => {
+        document.querySelectorAll('.timeline-step').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step-${i}`).classList.add('active');
+      }, i * 700);
+    }
+  }
+
+  // Quiz Grading
+  function gradeExam() {
+    const answers = { q1: '1', q2: '1', q3: '1', q4: '1', q5: '0', q6: '1' };
+    const points = { q1: 2, q2: 2, q3: 2, q4: 3, q5: 3, q6: 8 };
+    let score = 0;
+    let total = 20;
+
+    for (const [q, correct] of Object.entries(answers)) {
+      const selected = document.querySelector(`input[name="${q}"]:checked`);
+      const fb = document.getElementById(`fb-${q}`);
+      fb.style.display = 'block';
+      if (selected && selected.value === correct) {
+        score += points[q];
+        fb.className = 'quiz-feedback correct';
+        fb.innerHTML = `<strong>Correct! (+${points[q]} pts)</strong> Excellent reasoning.`;
+      } else {
+        fb.className = 'quiz-feedback incorrect';
+        fb.innerHTML = `<strong>Incorrect (+0 pts).</strong> Option (${correct === '0' ? 'a' : correct === '1' ? 'b' : 'c'}) is correct based on the lecture theorems.`;
+      }
+    }
+
+    const banner = document.getElementById('exam-score-banner');
+    banner.innerText = `Final Score: ${score} / ${total} points (${(score/total*100).toFixed(0)}%)`;
+  }
+
+  renderHeap();
+</script>
+
+</body>
+</html>
