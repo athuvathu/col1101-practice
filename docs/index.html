@@ -359,7 +359,7 @@
         <span id="engine-text">Pyodide: Loading...</span>
       </div>
       <div id="timer" class="timer-pill" onclick="toggleTimer()" title="Click or press Space to pause/resume">90:00 [Space]</div>
-      <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Syntax Check <span class="kbd">Ctrl+R</span></button>
+      <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Visible Tests (Debug) <span class="kbd">Ctrl+R</span></button>
       <button class="btn btn-eval" onclick="onEvaluate()" title="Shortcut: Ctrl+Enter / Cmd+Enter">&#9733; Evaluate (VPL Test) <span class="kbd">Ctrl+Enter</span></button>
       <button class="btn btn-reset" onclick="onResetCode()" title="Reset current question to initial stub">Reset Code</button>
     </div>
@@ -717,16 +717,25 @@ Execution traces, test passes/fails, and official Grade :=>> &lt;score&gt; will 
     }
 
     async function onRun() {
-      document.getElementById('exec-status').textContent = 'Checking syntax...';
+      document.getElementById('exec-status').textContent = 'Running visible samples...';
       const terminal = document.getElementById('terminal');
-      terminal.textContent = 'Executing Python syntax check in browser WASM engine...\n';
+      terminal.textContent = 'Mounting virtual MEMFS and running visible sample tests with live debug prints...\n';
+
+      const gradeBadge = document.getElementById('grade-badge');
+      gradeBadge.className = '';
+      gradeBadge.textContent = '';
 
       try {
         const py = await initPyodide();
-        const code = editor.getValue();
-        py.globals.set("__user_code__", code);
+        const qData = getProblemData();
+        const studentCode = currentFileTab === 'student' ? editor.getValue() : (localStorage.getItem(getStorageKey(currentExam, currentQ)) || qData.student_code);
 
-        const checkScript = `
+        // Mount files into Pyodide virtual MEMFS
+        py.FS.writeFile("common.py", qData.common_code);
+        py.FS.writeFile("student_code.py", studentCode);
+        py.FS.writeFile("sample_tests.py", qData.sample_tests);
+
+        const runScript = `
 import sys, io
 _out = io.StringIO()
 _orig_out = sys.stdout
@@ -736,30 +745,36 @@ sys.stderr = _out
 _exit_code = 0
 
 try:
-    compile(__user_code__, "student_code.py", "exec")
-    print("Syntax & Structure Check: PASSED")
-    print("Python 3 compilation succeeded with no syntax errors.")
-except SyntaxError as e:
-    _exit_code = 1
-    print(f"SYNTAX ERROR on line {e.lineno}:")
-    print(f"  {e.text.strip() if e.text else ''}")
-    offset = e.offset or 1
-    print(f"  {' ' * max(0, offset - 1)}^")
-    print(f"{type(e).__name__}: {e.msg}")
+    for m in list(sys.modules.keys()):
+        if m in ("student_code", "common", "solution", "sample_tests", "test_suite"):
+            del sys.modules[m]
+
+    import sample_tests
+    _passed, _total = sample_tests.run_samples("student_code")
+    _exit_code = 0 if _passed == _total else 1
 except Exception as e:
     _exit_code = 1
-    print(f"COMPILATION ERROR: {e}")
+    import traceback
+    traceback.print_exc()
 finally:
     sys.stdout = _orig_out
     sys.stderr = _orig_err
     _res = _out.getvalue()
 `;
-        await py.runPythonAsync(checkScript);
+        await py.runPythonAsync(runScript);
         const output = py.globals.get('_res');
         const exitCode = py.globals.get('_exit_code');
 
         terminal.textContent = output;
-        document.getElementById('exec-status').textContent = exitCode === 0 ? 'Syntax OK' : 'Syntax Error';
+
+        const sampleMatch = output.match(/SAMPLE RUN COMPLETE: (\d+)\/(\d+) Cases Passed/);
+        if (sampleMatch) {
+          const passed = parseInt(sampleMatch[1]);
+          const total = parseInt(sampleMatch[2]);
+          gradeBadge.textContent = `Samples: ${passed}/${total} Passed`;
+          gradeBadge.className = `score-banner ${passed === total ? 'score-pass' : 'score-fail'}`;
+        }
+        document.getElementById('exec-status').textContent = exitCode === 0 ? 'Samples Passed' : 'Samples Failed';
       } catch (err) {
         terminal.textContent = `Error launching Python WASM engine:\n${err.message}`;
         document.getElementById('exec-status').textContent = 'Engine Error';

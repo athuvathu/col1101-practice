@@ -207,8 +207,12 @@ class VPLHandler(BaseHTTPRequestHandler):
         if code is not None:
             (q_dir / "student_code.py").write_text(code, encoding="utf-8")
 
-        # Run python syntax check and import check
-        check_cmd = [sys.executable, "-c", "import student_code; print('Syntax & imports OK!')"]
+        # Run visible sample tests with live debug prints
+        sample_script = q_dir / "sample_tests.py"
+        if sample_script.exists():
+            check_cmd = [sys.executable, str(sample_script), "student_code"]
+        else:
+            check_cmd = [sys.executable, "-c", "import student_code; print('Syntax & imports OK!')"]
         proc = subprocess.run(check_cmd, cwd=str(q_dir), capture_output=True, text=True)
         out = proc.stdout + ("\n" + proc.stderr if proc.stderr else "")
         self._set_headers()
@@ -512,7 +516,7 @@ class VPLHandler(BaseHTTPRequestHandler):
 
     <div class="toolbar-actions">
       <div id="timer" class="timer-pill" onclick="toggleTimer()" title="Click or press Space to pause/resume">90:00 [Space]</div>
-      <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Syntax Check <span class="kbd">Ctrl+R</span></button>
+      <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Visible Tests (Debug) <span class="kbd">Ctrl+R</span></button>
       <button class="btn btn-eval" onclick="onEvaluate()" title="Shortcut: Ctrl+Enter / Cmd+Enter">&#9733; Evaluate (VPL Test) <span class="kbd">Ctrl+Enter</span></button>
     </div>
   </header>
@@ -736,9 +740,13 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
     }
 
     async function onRun() {
-      document.getElementById('exec-status').textContent = 'Checking...';
+      document.getElementById('exec-status').textContent = 'Running visible samples...';
       const terminal = document.getElementById('terminal');
-      terminal.textContent = 'Executing Python syntax & structure sanity check...\\n';
+      terminal.textContent = 'Executing visible sample tests with live debug prints...\\n';
+      const gradeBadge = document.getElementById('grade-badge');
+      gradeBadge.className = '';
+      gradeBadge.textContent = '';
+
       const res = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -746,7 +754,15 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
       });
       const data = await res.json();
       terminal.textContent = data.output;
-      document.getElementById('exec-status').textContent = data.exit_code === 0 ? 'Syntax OK' : 'Syntax Error';
+
+      const sampleMatch = data.output.match(/SAMPLE RUN COMPLETE: (\\d+)\\/(\\d+) Cases Passed/);
+      if (sampleMatch) {
+        const passed = parseInt(sampleMatch[1]);
+        const total = parseInt(sampleMatch[2]);
+        gradeBadge.textContent = `Samples: ${passed}/${total} Passed`;
+        gradeBadge.className = `score-banner ${passed === total ? 'score-pass' : 'score-fail'}`;
+      }
+      document.getElementById('exec-status').textContent = data.exit_code === 0 ? 'Samples Passed' : 'Samples Failed';
     }
 
     async function onEvaluate() {
