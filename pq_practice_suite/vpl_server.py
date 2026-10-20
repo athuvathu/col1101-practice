@@ -433,6 +433,9 @@ class VPLHandler(BaseHTTPRequestHandler):
       height: 38px;
       align-items: center;
       flex-shrink: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
     }
     .file-tab {
       background: transparent;
@@ -515,8 +518,15 @@ class VPLHandler(BaseHTTPRequestHandler):
       margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding-right: 8px;
+      flex-shrink: 0;
+    }
+    #save-status {
+      font-size: 11px;
+      color: #8b949e;
+      white-space: nowrap;
+      min-width: 60px;
     }
     .setting-label {
       font-size: 11px;
@@ -844,6 +854,10 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
       applyFontSize(FONT_SIZES[nextIdx]);
     }
 
+    function initPortalTheme() {
+      applyPortalTheme(currentPortalTheme);
+    }
+
     function applyPortalTheme(mode) {
       currentPortalTheme = mode;
       document.body.classList.toggle('light-theme', mode === 'light');
@@ -870,12 +884,10 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
     let timerInterval = null;
 
     function initAce() {
-      if (window.ace && ace.config) {
-        ace.config.set("basePath", "/vendor");
-      }
       editor = ace.edit("ace-editor");
       editor.setTheme("ace/theme/" + currentTheme);
       editor.session.setMode("ace/mode/python");
+      editor.session.setUseWorker(false);
 
       // Bracket auto-pairing and typing ergonomics
       editor.setBehavioursEnabled(true);
@@ -1025,14 +1037,17 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
         editor.setValue(problemData.student_code || "", -1);
         editor.setReadOnly(false);
         editor.session.setMode("ace/mode/python");
+        editor.session.setUseWorker(false);
       } else if (currentFileTab === 'common') {
         editor.setValue(problemData.common_code || "", -1);
         editor.setReadOnly(true);
         editor.session.setMode("ace/mode/python");
+        editor.session.setUseWorker(false);
       } else if (currentFileTab === 'readme') {
         editor.setValue(problemData.description || "", -1);
         editor.setReadOnly(true);
         editor.session.setMode("ace/mode/markdown");
+        editor.session.setUseWorker(false);
       }
     }
 
