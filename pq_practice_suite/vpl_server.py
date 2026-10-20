@@ -232,7 +232,15 @@ class VPLHandler(BaseHTTPRequestHandler):
   <script src="/vendor/auto-render.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js'"></script>
   <script src="/vendor/ace.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js'"></script>
   <script src="/vendor/mode-python.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js'"></script>
+  <script src="/vendor/mode-markdown.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-markdown.js'"></script>
   <script src="/vendor/theme-tomorrow_night.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-tomorrow_night.js'"></script>
+  <script src="/vendor/theme-monokai.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-monokai.js'"></script>
+  <script src="/vendor/theme-dracula.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-dracula.js'"></script>
+  <script src="/vendor/theme-gruvbox.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-gruvbox.js'"></script>
+  <script src="/vendor/theme-one_dark.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-one_dark.js'"></script>
+  <script src="/vendor/theme-solarized_dark.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-solarized_dark.js'"></script>
+  <script src="/vendor/theme-github.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-github.js'"></script>
+  <script src="/vendor/theme-solarized_light.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-solarized_light.js'"></script>
   <script src="/vendor/marked.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js'"></script>
 
   <style>
@@ -501,6 +509,182 @@ class VPLHandler(BaseHTTPRequestHandler):
     }
     .score-pass { background: #111a13; border: 1px solid #238636; color: #3fb950; }
     .score-fail { background: #261113; border: 1px solid #da3633; color: #f85149; }
+
+    /* Editor Quick Settings (Theme & Font Size) */
+    .editor-quick-settings {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-right: 8px;
+    }
+    .setting-label {
+      font-size: 11px;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .setting-select {
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      outline: none;
+    }
+    .setting-select:hover, .setting-select:focus {
+      border-color: #58a6ff;
+    }
+    .btn-theme {
+      background: #21262d;
+      border-color: #30363d;
+      color: #c9d1d9;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+    .btn-theme:hover {
+      background: #30363d;
+      color: #58a6ff;
+    }
+
+    /* Light Theme Overrides */
+    body.light-theme {
+      background: #f6f8fa;
+      color: #24292f;
+    }
+    body.light-theme header {
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+    }
+    body.light-theme .brand h1 {
+      color: #0969da;
+    }
+    body.light-theme .exam-select {
+      background: #ffffff;
+      color: #24292f;
+      border: 1px solid #d0d7de;
+    }
+    body.light-theme .btn {
+      background: #f6f8fa;
+      color: #24292f;
+      border: 1px solid #d0d7de;
+    }
+    body.light-theme .btn:hover {
+      background: #eaeef2;
+    }
+    body.light-theme .btn-run {
+      background: #0969da;
+      border-color: #0969da;
+      color: #fff;
+    }
+    body.light-theme .btn-run:hover {
+      background: #0860ca;
+    }
+    body.light-theme .btn-eval {
+      background: #1a7f37;
+      border-color: #1a7f37;
+      color: #fff;
+    }
+    body.light-theme .btn-eval:hover {
+      background: #166e30;
+    }
+    body.light-theme .btn-reset {
+      background: #f6f8fa;
+      border-color: #d0d7de;
+      color: #57606a;
+    }
+    body.light-theme .btn-reset:hover {
+      background: #cf222e;
+      border-color: #cf222e;
+      color: #fff;
+    }
+    body.light-theme .btn-theme {
+      background: #ffffff;
+      border-color: #d0d7de;
+      color: #24292f;
+    }
+    body.light-theme .timer-pill {
+      background: #ffffff;
+      border-color: #d0d7de;
+      color: #24292f;
+    }
+    body.light-theme .left-panel {
+      background: #f6f8fa;
+      border-right: 1px solid #d0d7de;
+    }
+    body.light-theme .panel-header {
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+    }
+    body.light-theme .q-btn {
+      color: #57606a;
+    }
+    body.light-theme .q-btn.active {
+      color: #0969da;
+      background: #ddf4ff;
+      border-color: #54aeff;
+    }
+    body.light-theme .problem-content {
+      color: #24292f;
+    }
+    body.light-theme .problem-content h1,
+    body.light-theme .problem-content h2,
+    body.light-theme .problem-content h3 {
+      color: #24292f;
+      border-bottom-color: #d0d7de;
+    }
+    body.light-theme .problem-content code {
+      background: #eaeef2;
+      color: #24292f;
+    }
+    body.light-theme .problem-content pre {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      color: #24292f;
+    }
+    body.light-theme .right-panel {
+      background: #ffffff;
+    }
+    body.light-theme .editor-tabs {
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+    }
+    body.light-theme .file-tab {
+      color: #57606a;
+    }
+    body.light-theme .file-tab.active {
+      color: #24292f;
+      border-bottom-color: #fd8c73;
+    }
+    body.light-theme .readonly-badge {
+      background: #eaeef2;
+      color: #57606a;
+    }
+    body.light-theme .setting-label {
+      color: #57606a;
+    }
+    body.light-theme .setting-select {
+      background: #ffffff;
+      color: #24292f;
+      border: 1px solid #d0d7de;
+    }
+    body.light-theme .terminal-panel {
+      background: #ffffff;
+      border-top: 1px solid #d0d7de;
+    }
+    body.light-theme .terminal-header {
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+      color: #24292f;
+    }
+    body.light-theme .terminal-output {
+      background: #f6f8fa;
+      color: #24292f;
+    }
   </style>
 </head>
 <body>
@@ -518,6 +702,7 @@ class VPLHandler(BaseHTTPRequestHandler):
       <div id="timer" class="timer-pill" onclick="toggleTimer()" title="Click or press Space to pause/resume">90:00 [Space]</div>
       <button class="btn btn-run" onclick="onRun()" title="Shortcut: Ctrl+R / Cmd+R">&#9654; Run Visible Tests (Debug) <span class="kbd">Ctrl+R</span></button>
       <button class="btn btn-eval" onclick="onEvaluate()" title="Shortcut: Ctrl+Enter / Cmd+Enter">&#9733; Evaluate (VPL Test) <span class="kbd">Ctrl+Enter</span></button>
+      <button id="theme-toggle-btn" class="btn btn-theme" onclick="togglePortalTheme()" title="Toggle Dark/Light Mode">&#9681; Dark</button>
     </div>
   </header>
 
@@ -548,7 +733,37 @@ class VPLHandler(BaseHTTPRequestHandler):
           <span>README.md</span>
           <span class="readonly-badge">READONLY</span>
         </button>
-        <span id="save-status" style="margin-left: auto; font-size: 11px; color: #8b949e; margin-right: 8px;">Saved</span>
+        <div class="editor-quick-settings">
+          <label class="setting-label">Theme:
+            <select id="theme-select" class="setting-select" onchange="onThemeChange(this.value)" title="Change editor color theme">
+              <optgroup label="Dark">
+                <option value="tomorrow_night" selected>Tomorrow Night</option>
+                <option value="monokai">Monokai</option>
+                <option value="dracula">Dracula</option>
+                <option value="gruvbox">Gruvbox</option>
+                <option value="one_dark">One Dark</option>
+                <option value="solarized_dark">Solarized Dark</option>
+              </optgroup>
+              <optgroup label="Light">
+                <option value="github">GitHub Light</option>
+                <option value="solarized_light">Solarized Light</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="setting-label">Font:
+            <select id="font-size-select" class="setting-select" onchange="onFontSizeChange(this.value)" title="Change font size (Shortcut: Ctrl+= / Ctrl+-)">
+              <option value="11">11px</option>
+              <option value="12">12px</option>
+              <option value="13" selected>13px</option>
+              <option value="14">14px</option>
+              <option value="15">15px</option>
+              <option value="16">16px</option>
+              <option value="18">18px</option>
+              <option value="20">20px</option>
+            </select>
+          </label>
+          <span id="save-status">Saved</span>
+        </div>
       </div>
 
       <!-- Ace Editor Host -->
@@ -574,14 +789,92 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
     let saveTimeout = null;
     let editor = null;
 
+    // Theme & Font Size state persisted in localStorage
+    const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20];
+    let currentTheme = localStorage.getItem('col1101_editor_theme') || 'tomorrow_night';
+    let currentFontSize = parseInt(localStorage.getItem('col1101_font_size') || '13', 10);
+    if (!FONT_SIZES.includes(currentFontSize)) currentFontSize = 13;
+    let currentPortalTheme = localStorage.getItem('col1101_portal_theme') || 'dark';
+
+    function applyTheme(themeName) {
+      currentTheme = themeName;
+      if (editor) {
+        editor.setTheme("ace/theme/" + themeName);
+      }
+      localStorage.setItem('col1101_editor_theme', themeName);
+      const select = document.getElementById('theme-select');
+      if (select && select.value !== themeName) {
+        select.value = themeName;
+      }
+    }
+
+    function onThemeChange(themeName) {
+      applyTheme(themeName);
+      if ((themeName === 'github' || themeName === 'solarized_light') && currentPortalTheme === 'dark') {
+        applyPortalTheme('light');
+      } else if (themeName !== 'github' && themeName !== 'solarized_light' && currentPortalTheme === 'light') {
+        applyPortalTheme('dark');
+      }
+    }
+
+    function applyFontSize(size) {
+      currentFontSize = parseInt(size, 10);
+      if (editor) {
+        editor.setOption("fontSize", currentFontSize + "px");
+      }
+      const terminal = document.getElementById('terminal');
+      if (terminal) {
+        terminal.style.fontSize = Math.max(11, currentFontSize - 1) + "px";
+      }
+      localStorage.setItem('col1101_font_size', currentFontSize);
+      const select = document.getElementById('font-size-select');
+      if (select && parseInt(select.value, 10) !== currentFontSize) {
+        select.value = currentFontSize;
+      }
+    }
+
+    function onFontSizeChange(size) {
+      applyFontSize(size);
+    }
+
+    function stepFontSize(delta) {
+      let idx = FONT_SIZES.indexOf(currentFontSize);
+      if (idx === -1) idx = 2;
+      const nextIdx = Math.max(0, Math.min(FONT_SIZES.length - 1, idx + delta));
+      applyFontSize(FONT_SIZES[nextIdx]);
+    }
+
+    function applyPortalTheme(mode) {
+      currentPortalTheme = mode;
+      document.body.classList.toggle('light-theme', mode === 'light');
+      localStorage.setItem('col1101_portal_theme', mode);
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) {
+        btn.innerHTML = mode === 'light' ? '&#9728; Light' : '&#9681; Dark';
+      }
+    }
+
+    function togglePortalTheme() {
+      const next = currentPortalTheme === 'dark' ? 'light' : 'dark';
+      applyPortalTheme(next);
+      if (next === 'light' && (currentTheme === 'tomorrow_night' || currentTheme === 'one_dark')) {
+        applyTheme('github');
+      } else if (next === 'dark' && currentTheme === 'github') {
+        applyTheme('tomorrow_night');
+      }
+    }
+
     // Timer state
     let timeLeft = 90 * 60;
     let timerRunning = false;
     let timerInterval = null;
 
     function initAce() {
+      if (window.ace && ace.config) {
+        ace.config.set("basePath", "/vendor");
+      }
       editor = ace.edit("ace-editor");
-      editor.setTheme("ace/theme/tomorrow_night");
+      editor.setTheme("ace/theme/" + currentTheme);
       editor.session.setMode("ace/mode/python");
 
       // Bracket auto-pairing and typing ergonomics
@@ -589,7 +882,7 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
       editor.setWrapBehavioursEnabled(true);
 
       editor.setOptions({
-        fontSize: "13px",
+        fontSize: currentFontSize + "px",
         fontFamily: "'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', Menlo, monospace",
         tabSize: 4,
         useSoftTabs: true,
@@ -601,6 +894,9 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
         enableLiveAutocompletion: false,
         enableSnippets: false
       });
+
+      applyTheme(currentTheme);
+      applyFontSize(currentFontSize);
 
       // Keyboard shortcuts
       editor.commands.addCommand({
@@ -619,6 +915,24 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
         name: 'runCode',
         bindKey: {win: 'Ctrl-R', mac: 'Command-R'},
         exec: function() { onRun(); }
+      });
+
+      editor.commands.addCommand({
+        name: 'increaseFontSize',
+        bindKey: {win: 'Ctrl-=', mac: 'Command-='},
+        exec: function() { stepFontSize(1); }
+      });
+
+      editor.commands.addCommand({
+        name: 'decreaseFontSize',
+        bindKey: {win: 'Ctrl--', mac: 'Command--'},
+        exec: function() { stepFontSize(-1); }
+      });
+
+      editor.commands.addCommand({
+        name: 'resetFontSize',
+        bindKey: {win: 'Ctrl-0', mac: 'Command-0'},
+        exec: function() { applyFontSize(13); }
       });
 
       editor.session.on('change', function() {
@@ -831,15 +1145,35 @@ Execution traces, test passes/fails, and official Grade :=>> <score> will appear
       }
     }
 
-    // Space / P keyboard shortcut to pause/resume timer (when outside editor)
+    // Global keyboard shortcuts (Timer pause/resume and Font Zoom)
     window.addEventListener('keydown', (e) => {
+      // Ctrl+= / Cmd+=, Ctrl+- / Cmd+-, Ctrl+0 / Cmd+0
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '0')) {
+        if (e.key === '=' || e.key === '+') {
+          e.preventDefault();
+          stepFontSize(1);
+          return;
+        } else if (e.key === '-') {
+          e.preventDefault();
+          stepFontSize(-1);
+          return;
+        } else if (e.key === '0') {
+          e.preventDefault();
+          applyFontSize(13);
+          return;
+        }
+      }
+
       if ((e.code === 'Space' || e.key === 'p' || e.key === 'P') && !editor.isFocused()) {
+        const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (tag === 'select' || tag === 'input' || tag === 'button') return;
         e.preventDefault();
         toggleTimer();
       }
     });
 
     window.onload = () => {
+      initPortalTheme();
       initAce();
       loadProblem();
     };
